@@ -16,10 +16,11 @@
         <input type="text" name="" id="search-bar" placeholder="Search">
         <div id="add-tasks-container">
             <h2 id="add-tasks-heading">Add Tasks</h2>
-            <input type="text" id="add-tasks-input" placeholder="Add new task.">
+            <input type="text" id="add-tasks-input" placeholder="Add new task." required>
             <div id="tags-box">
                 <input type="text" id="new-tag" placeholder="Add new tag.">
                 <button onclick="addTags()">Add Tag</button>
+                <input type="date" id="date-input" required>
                 <ul id="tags-list" style="list-style-type: none;">
                 </ul>
             </div>

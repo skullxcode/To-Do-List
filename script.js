@@ -4,6 +4,7 @@ let completedTasksList = document.getElementById("completed-tasks-list");
 let tagsList = document.getElementById("tags-list");
 let searchBar = document.getElementById("search-bar");
 let newTag = document.getElementById("new-tag");
+let dateInput = document.getElementById("date-input");
 let addTaskBtn = document.getElementById("add-task-button")
 let currentEditingTask = null;
 
@@ -14,10 +15,20 @@ let tagsArray = JSON.parse(localStorage.getItem("tags")) || [];
 
 function addTask() {
     let input = newTask.value.trim();
-    if (!input) return;
+    let dateVal = dateInput.value;
+
+    if (!input) {
+        showNotification("Please enter a task title", "error");
+        return;
+    }
+    if (!dateVal) {
+        showNotification("Please select a due date", "error");
+        return;
+    }
 
     if (currentEditingTask) {
         currentEditingTask.title = input;
+        currentEditingTask.dueDate = dateVal;
 
         let selectedTags = [];
         let tagItems = tagsList.querySelectorAll("li");
@@ -44,11 +55,12 @@ function addTask() {
             if (name) selectedTags.push(name);
         });
 
-        let taskItem = { title: input, completed: false, tags: selectedTags, dueDate: "" };
+        let taskItem = { title: input, completed: false, tags: selectedTags, dueDate: dateVal };
         inProgressTasksArray.push(taskItem);
     }
 
     newTask.value = "";
+    dateInput.value = "";
     renderAll();
 }
 
@@ -63,6 +75,7 @@ function editTask(event) {
         if (taskObj) {
             currentEditingTask = taskObj;
             newTask.value = taskObj.title;
+            dateInput.value = taskObj.dueDate || "";
             addTaskBtn.innerText = "Edit Task";
 
             let tagItems = tagsList.querySelectorAll("li");
@@ -148,15 +161,24 @@ function renderTask(arr, container) {
 
     for (let i of arr) {
         let li = document.createElement("li");
+
         let taskTagsHTML = "";
         for (let tag of i.tags) {
             taskTagsHTML += `<small class="task-tag-label">${tag}</small>`;
         }
 
+        let dateHTML = "";
+        if (i.dueDate) {
+            dateHTML = `<small class="task-date-label">📅 ${i.dueDate}</small>`;
+        }
+
         li.innerHTML = `
             <input type="checkbox" ${i.completed ? "checked" : ""}>
             <span class="text">${i.title}</span>
-            <span class="tags-display">${taskTagsHTML}</span>
+            <span class="tags-display">
+                ${taskTagsHTML}
+                ${dateHTML}
+            </span>
             <button class="edit">Edit</button>
             <button class="delete">Delete</button>`;
         container.appendChild(li);
@@ -196,15 +218,47 @@ function addTags() {
     }
 }
 
+
 function renderTags() {
     saveToLocal()
     tagsList.innerHTML = ""
     for (let i of tagsArray) {
         let li = document.createElement("li");
-        li.innerHTML = `<input type="checkbox" name="" id="tags-item"><span>${i}</span>`
+        li.innerHTML = `<input type="checkbox" name="" id="tags-item"><span>${i}</span><button class="delete-tag-btn">&times;</button>`
         tagsList.appendChild(li)
     }
 }
+
+tagsList.addEventListener("click", function (event) {
+    if (event.target.classList.contains("delete-tag-btn")) {
+        let li = event.target.parentElement;
+        let span = li.querySelector("span");
+        let tagName = span.innerText;
+
+        let index = tagsArray.indexOf(tagName);
+        if (index > -1) {
+            tagsArray.splice(index, 1);
+
+            // Remove tag from all tasks
+            inProgressTasksArray.forEach(task => {
+                let tagIndex = task.tags.indexOf(tagName);
+                if (tagIndex > -1) {
+                    task.tags.splice(tagIndex, 1);
+                }
+            });
+
+            completedTasksArray.forEach(task => {
+                let tagIndex = task.tags.indexOf(tagName);
+                if (tagIndex > -1) {
+                    task.tags.splice(tagIndex, 1);
+                }
+            });
+
+            renderTags();
+            renderAll();
+        }
+    }
+});
 
 function getTagNameIfChecked(li) {
     let checkbox = li.querySelector("input");
@@ -266,3 +320,32 @@ completedTasksList.addEventListener("click", editTask);
 
 renderAll();
 renderTags();
+
+
+
+
+
+
+let notificationContainer = document.createElement("div");
+notificationContainer.id = "notification-container";
+document.body.appendChild(notificationContainer);
+
+function showNotification(message, type = "info") {
+    let toast = document.createElement("div");
+    toast.className = `toast ${type}`;
+
+    let icon = "🔔";
+    if (type === "error") icon = "⚠️";
+    if (type === "success") icon = "✅";
+
+    toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
+
+    notificationContainer.appendChild(toast);
+
+    setTimeout(() => {
+        toast.style.animation = "fadeOutRight 0.3s forwards";
+        toast.addEventListener("animationend", () => {
+            toast.remove();
+        });
+    }, 3000);
+}
