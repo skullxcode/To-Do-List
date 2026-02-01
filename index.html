@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
-    <!-- <link rel="stylesheet" href="style.css"> -->
+    <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
     <nav>
         <h1>To-Do List</h1>
@@ -14,12 +16,15 @@
         <input type="text" name="" id="search-bar" placeholder="Search">
         <div id="add-tasks-container">
             <h2 id="add-tasks-heading">Add Tasks</h2>
-            <input type="text" id="add-tasks-input">
-            <ul id="tags-list">
-                <li><input type="checkbox" name="" id="">Hwello</li>
-                <li><input type="checkbox" name="" id="">Hllo</li>
-            </ul> 
-            <button onclick="addTask()">Add Task</button>
+            <input type="text" id="add-tasks-input" placeholder="Add new task.">
+            <div id="tags-box">
+                <input type="text" id="new-tag" placeholder="Add new tag.">
+                <button onclick="addTags()">Add Tag</button>
+                <ul id="tags-list" style="list-style-type: none;">
+                </ul>
+            </div>
+            <button onclick="cancelEdit()" id="cancel-edit-button">Cancel</button>
+            <button onclick="addTask()" id="add-task-button">Add Task</button>
 
         </div>
         <div id="tasks-in-progress-container">
@@ -36,4 +41,5 @@
     </main>
     <script src="script.js"></script>
 </body>
+
 </html>

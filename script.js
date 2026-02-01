@@ -2,42 +2,92 @@ let newTask = document.getElementById("add-tasks-input");
 let tasksInProgressList = document.getElementById("tasks-in-progress-list");
 let completedTasksList = document.getElementById("completed-tasks-list");
 let tagsList = document.getElementById("tags-list");
-let searchBar = document.getElementById("search-bar")
+let searchBar = document.getElementById("search-bar");
+let newTag = document.getElementById("new-tag");
+let addTaskBtn = document.getElementById("add-task-button")
+let currentEditingTask = null;
+
+let inProgressTasksArray = JSON.parse(localStorage.getItem("inProgress")) || [];
+let completedTasksArray = JSON.parse(localStorage.getItem("completed")) || [];
+let tagsArray = JSON.parse(localStorage.getItem("tags")) || [];
 
 
-let inProgressTasksArray = [];
-let completedTasksArray = [];
-let tagsArray = [];
-
-
-function addTask(){
+function addTask() {
     let input = newTask.value.trim();
-    if(inProgressTasksArray.some(t => t.title === input)||
-        completedTasksArray.some(t => t.title === input)
-    ){
-        alert("Task Already Exists")
-        return
+    if (!input) return;
+
+    if (currentEditingTask) {
+        currentEditingTask.title = input;
+
+        let selectedTags = [];
+        let tagItems = tagsList.querySelectorAll("li");
+        tagItems.forEach(li => {
+            let name = getTagNameIfChecked(li);
+            if (name) selectedTags.push(name);
+        });
+
+        currentEditingTask.tags = selectedTags;
+
+        currentEditingTask = null;
+        addTaskBtn.innerText = "Add Task";
     }
-    if(input){
-        let taskItem = {title:input, completed:false, tags:[], dueDate:""};
+    else {
+        if (inProgressTasksArray.some(t => t.title === input) || completedTasksArray.some(t => t.title === input)) {
+            alert("Task Already Exists");
+            return;
+        }
+
+        let selectedTags = [];
+        let tagItems = tagsList.querySelectorAll("li");
+        tagItems.forEach(li => {
+            let name = getTagNameIfChecked(li);
+            if (name) selectedTags.push(name);
+        });
+
+        let taskItem = { title: input, completed: false, tags: selectedTags, dueDate: "" };
         inProgressTasksArray.push(taskItem);
-        newTask.value = "";
-        renderAll()
+    }
+
+    newTask.value = "";
+    renderAll();
+}
+
+function editTask(event) {
+    if (event.target.classList.contains("edit")) {
+        let span = event.target.parentElement.querySelector(".text");
+        let titleToEdit = span.innerText.trim();
+
+        let taskObj = inProgressTasksArray.find(t => t.title === titleToEdit) ||
+            completedTasksArray.find(t => t.title === titleToEdit);
+
+        if (taskObj) {
+            currentEditingTask = taskObj;
+            newTask.value = taskObj.title;
+            addTaskBtn.innerText = "Edit Task";
+
+            let tagItems = tagsList.querySelectorAll("li");
+            tagItems.forEach(li => {
+                let checkbox = li.querySelector("input");
+                let tagName = li.querySelector("span").innerText;
+                checkbox.checked = taskObj.tags.includes(tagName);
+            });
+
+            newTask.focus();
+        }
     }
 }
 
-
-function deleteTask(event){
-    if(event.target.classList.contains("delete")){
+function deleteTask(event) {
+    if (event.target.classList.contains("delete")) {
         let titleToDelete = event.target.parentElement.querySelector(".text").innerText.trim();
 
         let progInd = inProgressTasksArray.findIndex(t => t.title === titleToDelete);
         let compInd = completedTasksArray.findIndex(t => t.title === titleToDelete);
-        if(progInd!==-1){
-            inProgressTasksArray.splice(progInd,1);
+        if (progInd !== -1) {
+            inProgressTasksArray.splice(progInd, 1);
         }
-        else if(compInd!==-1){
-            completedTasksArray.splice(compInd,1);
+        else if (compInd !== -1) {
+            completedTasksArray.splice(compInd, 1);
         }
         renderAll();
     }
@@ -45,21 +95,21 @@ function deleteTask(event){
 
 
 
-function changeState(event){
-    if (event.target.type === "checkbox"){
+function changeState(event) {
+    if (event.target.type === "checkbox") {
         let taskTitle = event.target.parentElement.querySelector(".text").innerText.trim();
 
-        if(event.target.checked){
+        if (event.target.checked) {
             let ind = inProgressTasksArray.findIndex(t => t.title === taskTitle)
-            if(ind!==-1){
-                let taskChanged = inProgressTasksArray.splice(ind,1)[0];
+            if (ind !== -1) {
+                let taskChanged = inProgressTasksArray.splice(ind, 1)[0];
                 taskChanged.completed = true;
                 completedTasksArray.push(taskChanged);
             }
-        }else{
+        } else {
             let ind = completedTasksArray.findIndex(t => t.title === taskTitle)
-            if(ind!==-1){
-                let taskChanged = completedTasksArray.splice(ind,1)[0];
+            if (ind !== -1) {
+                let taskChanged = completedTasksArray.splice(ind, 1)[0];
                 taskChanged.completed = false;
                 inProgressTasksArray.push(taskChanged);
             }
@@ -72,17 +122,41 @@ function changeState(event){
 
 
 function renderAll() {
+    saveToLocal()
     renderTask(inProgressTasksArray, tasksInProgressList);
     renderTask(completedTasksArray, completedTasksList);
 }
 
 function renderTask(arr, container) {
-    container.innerHTML ="";
+    container.innerHTML = "";
+
+    if (arr.length === 0) {
+        let message = "No tasks found.";
+        if (container.id === "tasks-in-progress-list") {
+            message = "No active tasks. Time to relax? 🎉";
+        } else if (container.id === "completed-tasks-list") {
+            message = "No completed tasks yet. Keep going! 💪";
+        }
+
+        container.innerHTML = `
+            <li class="empty-state">
+                <span class="empty-text">${message}</span>
+            </li>
+        `;
+        return;
+    }
+
     for (let i of arr) {
         let li = document.createElement("li");
+        let taskTagsHTML = "";
+        for (let tag of i.tags) {
+            taskTagsHTML += `<small class="task-tag-label">${tag}</small>`;
+        }
+
         li.innerHTML = `
             <input type="checkbox" ${i.completed ? "checked" : ""}>
             <span class="text">${i.title}</span>
+            <span class="tags-display">${taskTagsHTML}</span>
             <button class="edit">Edit</button>
             <button class="delete">Delete</button>`;
         container.appendChild(li);
@@ -90,56 +164,105 @@ function renderTask(arr, container) {
 }
 
 
-function search(event){
+function search(event) {
     let inProgressSearchArray = [];
     let completedSearchArray = [];
     let searchWord = searchBar.value.trim()
-    if(searchWord){
-        for(let i of inProgressTasksArray){
-            if(i["title"].toLowerCase().includes(searchWord.toLowerCase())){
+    if (searchWord) {
+        for (let i of inProgressTasksArray) {
+            if (i["title"].toLowerCase().includes(searchWord.toLowerCase())) {
                 inProgressSearchArray.push(i)
             }
         }
-        for(let i of completedTasksArray){
-            if(i["title"].toLowerCase().includes(searchWord.toLowerCase())){
+        for (let i of completedTasksArray) {
+            if (i["title"].toLowerCase().includes(searchWord.toLowerCase())) {
                 completedSearchArray.push(i)
             }
         }
-        renderTask(inProgressSearchArray,tasksInProgressList)
-        renderTask(completedSearchArray,completedTasksList)
+        renderTask(inProgressSearchArray, tasksInProgressList)
+        renderTask(completedSearchArray, completedTasksList)
     }
-    else{
+    else {
         renderAll()
     }
 }
 
-searchBar.addEventListener("input",search);
+function addTags() {
+    let tagName = newTag.value.trim();
+    if (tagName && !tagsArray.includes(tagName)) {
+        tagsArray.push(tagName)
+        renderTags();
+        newTag.value = ""
+    }
+}
+
+function renderTags() {
+    saveToLocal()
+    tagsList.innerHTML = ""
+    for (let i of tagsArray) {
+        let li = document.createElement("li");
+        li.innerHTML = `<input type="checkbox" name="" id="tags-item"><span>${i}</span>`
+        tagsList.appendChild(li)
+    }
+}
+
+function getTagNameIfChecked(li) {
+    let checkbox = li.querySelector("input");
+    let span = li.querySelector("span");
+
+    if (checkbox && checkbox.checked) {
+        checkbox.checked = false;
+        return span.innerText;
+    }
+    return null;
+}
+
+function cancelEdit() {
+    currentEditingTask = null;
+    newTask.value = "";
+    addTaskBtn.innerText = "Add Task";
+
+    let tagCheckboxes = tagsList.querySelectorAll('input[type="checkbox"]');
+    tagCheckboxes.forEach(cb => cb.checked = false);
+}
+
+function saveToLocal() {
+    localStorage.setItem("inProgress", JSON.stringify(inProgressTasksArray));
+    localStorage.setItem("completed", JSON.stringify(completedTasksArray));
+    localStorage.setItem("tags", JSON.stringify(tagsArray));
+}
 
 
-tasksInProgressList.addEventListener("change",changeState);
-completedTasksList.addEventListener("change",changeState);
+newTask.addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+        event.preventDefault();
+        addTask();
+    }
+});
 
 
-tasksInProgressList.addEventListener("click",deleteTask);
-completedTasksList.addEventListener("click",deleteTask);
+newTag.addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+        event.preventDefault();
+        addTags();
+    }
+});
 
 
-// tasksInProgressList.addEventListener("click",editTask);
-// completedTasksList.addEventListener("click",editTask);
+searchBar.addEventListener("input", search);
 
 
+tasksInProgressList.addEventListener("change", changeState);
+completedTasksList.addEventListener("change", changeState);
 
 
+tasksInProgressList.addEventListener("click", deleteTask);
+completedTasksList.addEventListener("click", deleteTask);
 
-// function editTask(event){
-//     if(event.target.classList.contains("edit")){
-//         let parent = event.target.parentElement;
-//         let oldTask = parent.querySelector(".text");
-//         let val = oldTask.innerText
-//         let editedTask = prompt("Update task:", oldTask.innerText);
-//         if(editedTask){oldTask.innerText = editedTask}
-//         else{
-//             oldTask.innerText = val;
-//         }
-//     }
-// }
+
+tasksInProgressList.addEventListener("click", editTask);
+completedTasksList.addEventListener("click", editTask);
+
+
+renderAll();
+renderTags();
