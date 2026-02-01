@@ -2,7 +2,7 @@ let newTask = document.getElementById("add-tasks-input");
 let tasksInProgressList = document.getElementById("tasks-in-progress-list");
 let completedTasksList = document.getElementById("completed-tasks-list");
 let tagsList = document.getElementById("tags-list");
-// let searchBar = document.getElementById("search-bar")
+let searchBar = document.getElementById("search-bar")
 
 
 let inProgressTasksArray = [];
@@ -12,6 +12,12 @@ let tagsArray = [];
 
 function addTask(){
     let input = newTask.value.trim();
+    if(inProgressTasksArray.some(t => t.title === input)||
+        completedTasksArray.some(t => t.title === input)
+    ){
+        alert("Task Already Exists")
+        return
+    }
     if(input){
         let taskItem = {title:input, completed:false, tags:[], dueDate:""};
         inProgressTasksArray.push(taskItem);
@@ -66,14 +72,12 @@ function changeState(event){
 
 
 function renderAll() {
-    tasksInProgressList.innerHTML = "";
-    completedTasksList.innerHTML = "";
-    
     renderTask(inProgressTasksArray, tasksInProgressList);
     renderTask(completedTasksArray, completedTasksList);
 }
 
 function renderTask(arr, container) {
+    container.innerHTML ="";
     for (let i of arr) {
         let li = document.createElement("li");
         li.innerHTML = `
@@ -86,11 +90,30 @@ function renderTask(arr, container) {
 }
 
 
+function search(event){
+    let inProgressSearchArray = [];
+    let completedSearchArray = [];
+    let searchWord = searchBar.value.trim()
+    if(searchWord){
+        for(let i of inProgressTasksArray){
+            if(i["title"].toLowerCase().includes(searchWord.toLowerCase())){
+                inProgressSearchArray.push(i)
+            }
+        }
+        for(let i of completedTasksArray){
+            if(i["title"].toLowerCase().includes(searchWord.toLowerCase())){
+                completedSearchArray.push(i)
+            }
+        }
+        renderTask(inProgressSearchArray,tasksInProgressList)
+        renderTask(completedSearchArray,completedTasksList)
+    }
+    else{
+        renderAll()
+    }
+}
 
-
-
-
-
+searchBar.addEventListener("input",search);
 
 
 tasksInProgressList.addEventListener("change",changeState);
@@ -101,8 +124,8 @@ tasksInProgressList.addEventListener("click",deleteTask);
 completedTasksList.addEventListener("click",deleteTask);
 
 
-tasksInProgressList.addEventListener("click",editTask);
-completedTasksList.addEventListener("click",editTask);
+// tasksInProgressList.addEventListener("click",editTask);
+// completedTasksList.addEventListener("click",editTask);
 
 
 
