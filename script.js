@@ -229,6 +229,33 @@ function renderTags() {
     }
 }
 
+
+function getTagNameIfChecked(li) {
+    let checkbox = li.querySelector("input");
+    let span = li.querySelector("span");
+    
+    if (checkbox && checkbox.checked) {
+        checkbox.checked = false;
+        return span.innerText;
+    }
+    return null;
+}
+
+function cancelEdit() {
+    currentEditingTask = null;
+    newTask.value = "";
+    addTaskBtn.innerText = "Add Task";
+    
+    let tagCheckboxes = tagsList.querySelectorAll('input[type="checkbox"]');
+    tagCheckboxes.forEach(cb => cb.checked = false);
+}
+
+function saveToLocal() {
+    localStorage.setItem("inProgress", JSON.stringify(inProgressTasksArray));
+    localStorage.setItem("completed", JSON.stringify(completedTasksArray));
+    localStorage.setItem("tags", JSON.stringify(tagsArray));
+}
+
 tagsList.addEventListener("click", function (event) {
     if (event.target.classList.contains("delete-tag-btn")) {
         let li = event.target.parentElement;
@@ -239,7 +266,6 @@ tagsList.addEventListener("click", function (event) {
         if (index > -1) {
             tagsArray.splice(index, 1);
 
-            // Remove tag from all tasks
             inProgressTasksArray.forEach(task => {
                 let tagIndex = task.tags.indexOf(tagName);
                 if (tagIndex > -1) {
@@ -259,33 +285,6 @@ tagsList.addEventListener("click", function (event) {
         }
     }
 });
-
-function getTagNameIfChecked(li) {
-    let checkbox = li.querySelector("input");
-    let span = li.querySelector("span");
-
-    if (checkbox && checkbox.checked) {
-        checkbox.checked = false;
-        return span.innerText;
-    }
-    return null;
-}
-
-function cancelEdit() {
-    currentEditingTask = null;
-    newTask.value = "";
-    addTaskBtn.innerText = "Add Task";
-
-    let tagCheckboxes = tagsList.querySelectorAll('input[type="checkbox"]');
-    tagCheckboxes.forEach(cb => cb.checked = false);
-}
-
-function saveToLocal() {
-    localStorage.setItem("inProgress", JSON.stringify(inProgressTasksArray));
-    localStorage.setItem("completed", JSON.stringify(completedTasksArray));
-    localStorage.setItem("tags", JSON.stringify(tagsArray));
-}
-
 
 newTask.addEventListener("keydown", function (event) {
     if (event.key === "Enter") {
